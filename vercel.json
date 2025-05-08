@@ -1,35 +1,25 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "packngo/wsgi.py",
-        "use": "@vercel/python",
-        "config": {
-          "maxLambdaSize": "15mb",
-          "runtime": "python3.9"
-        }
-      },
-      {
-        "src": "build_files.sh",
-        "use": "@vercel/static-build",
-        "config": {
-          "distDir": "staticfiles"
-        }
+  "builds": [
+    {
+      "src": "packngo/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "pythonVersion": "3.11"
       }
-    ],
-    "routes": [
-      {
-        "src": "/static/(.*)",
-        "dest": "/static/$1"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "packngo/wsgi.py"
-      }
-    ],
-    "env": {
-      "PYTHONUNBUFFERED": "1",
-      "DJANGO_SETTINGS_MODULE": "packngo.settings"
     }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "packngo/wsgi.py"
+    }
+  ],
+  "env": {
+    "PYTHONUNBUFFERED": "1",
+    "DJANGO_SETTINGS_MODULE": "packngo.settings"
   }
-  
+}
