@@ -1,0 +1,138 @@
+{% extends "users/base.html" %}
+{% block title %}Hotel Booking{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Book a Hotel</h2>
+
+    {% if hotels %}
+        <form method="post" id="hotel-booking-form">
+            {% csrf_token %}
+            <!-- Hotel Selection -->
+            <div class="mb-3">
+                <label for="hotel_id" class="form-label">Select Hotel</label>
+                <select name="hotel_id" id="hotel_id" class="form-control" required>
+                    <option value="">Select a Hotel</option>
+                    {% for hotel in hotels %}
+                        <option value="{{ hotel.id }}" data-price="{{ hotel.price_per_night }}">{{ hotel.name }} in {{ hotel.location }} (BDT {{ hotel.price_per_night }} per night)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Room Capacity Selection -->
+            <div class="mb-3">
+                <label for="capacity" class="form-label">Room Capacity (Number of People)</label>
+                <select name="capacity" id="capacity" class="form-control" required>
+                    <option value="">Select Room Capacity</option>
+                </select>
+            </div>
+
+            <!-- Check-In and Check-Out Dates -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="check_in_date" class="form-label">Check-In Date</label>
+                    <input type="date" name="check_in_date" id="check_in_date" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="check_out_date" class="form-label">Check-Out Date</label>
+                    <input type="date" name="check_out_date" id="check_out_date" class="form-control" required>
+                </div>
+            </div>
+
+            <!-- Number of Guests -->
+            <div class="mb-3">
+                <label for="num_guests" class="form-label">Number of Guests</label>
+                <input type="number" name="num_guests" id="num_guests" class="form-control" value="1" min="1" required>
+            </div>
+
+            <!-- Total Price (Dynamic) -->
+            <div class="mb-3">
+                <h5>Total Price: <span id="total-price">0</span> BDT</h5>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary">Book Hotel</button>
+        </form>
+
+        <script type="text/javascript">
+        // Hotel room capacities (populated as JSON)
+        const hotelCapacities = JSON.parse('{{ hotel_capacities_json | escapejs }}');
+
+        function updateCapacityOptions() {
+            const hotelSelect = document.getElementById('hotel_id');
+            const capacitySelect = document.getElementById('capacity');
+            const selectedHotelId = hotelSelect.value;
+
+            // Clear existing options
+            capacitySelect.innerHTML = '<option value="">Select Room Capacity</option>';
+
+            if (selectedHotelId && hotelCapacities[selectedHotelId]) {
+                const capacities = hotelCapacities[selectedHotelId];
+                capacities.forEach(capacity => {
+                    const option = document.createElement('option');
+                    option.value = capacity.capacity;
+                    option.text = `Room for ${capacity.capacity} people (${capacity.available} available)`;
+                    capacitySelect.appendChild(option);
+                });
+            }
+
+            updatePrice();
+        }
+
+        function updatePrice() {
+            const hotelSelect = document.getElementById('hotel_id');
+            const capacitySelect = document.getElementById('capacity');
+            const checkInDate = document.getElementById('check_in_date').value;
+            const checkOutDate = document.getElementById('check_out_date').value;
+            let numGuests = parseInt(document.getElementById('num_guests').value || 1);
+
+            // Validate number of guests against capacity
+            const selectedCapacity = parseInt(capacitySelect.value || 0);
+            if (selectedCapacity && numGuests > selectedCapacity) {
+                alert('Number of guests exceeds the selected room capacity.');
+                document.getElementById('num_guests').value = selectedCapacity;
+                numGuests = selectedCapacity;
+            }
+
+            let pricePerNight = 0;
+            if (hotelSelect.value) {
+                const selectedOption = hotelSelect.options[hotelSelect.selectedIndex];
+                pricePerNight = parseFloat(selectedOption.getAttribute('data-price'));
+            }
+
+            // Calculate stay duration
+            let stayDays = 0;
+            if (checkInDate && checkOutDate) {
+                const checkIn = new Date(checkInDate);
+                const checkOut = new Date(checkOutDate);
+                stayDays = (checkOut - checkIn) / (1000 * 60 * 60 * 24);
+                if (stayDays <= 0) {
+                    stayDays = 0;
+                    document.getElementById('total-price').textContent = '0';
+                    alert('Check-out date must be after check-in date.');
+                    return;
+                }
+            }
+
+            // Calculate total price
+            const hotelTotalPrice = pricePerNight * stayDays;
+            const guestCost = numGuests * 5000;  // 5000 BDT per guest
+            const totalPrice = hotelTotalPrice + guestCost;
+
+            document.getElementById('total-price').textContent = totalPrice.toLocaleString();
+        }
+
+        // Add event listeners
+        document.getElementById('hotel_id').addEventListener('change', updateCapacityOptions);
+        document.getElementById('capacity').addEventListener('change', updatePrice);
+        document.getElementById('check_in_date').addEventListener('change', updatePrice);
+        document.getElementById('check_out_date').addEventListener('change', updatePrice);
+        document.getElementById('num_guests').addEventListener('change', updatePrice);
+
+        // Initialize capacity options on page load
+        updateCapacityOptions();
+        </script>
+    {% else %}
+        <p class="text-center">No hotels with available rooms at this time.</p>
+    {% endif %}
+</div>
+{% endblock %}

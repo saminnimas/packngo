@@ -1,0 +1,230 @@
+{% extends "users/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Create and Buy Custom Package</h2>
+
+    <form method="post" id="custom-package-form">
+        {% csrf_token %}
+        <input type="hidden" name="buy_package" value="true">
+
+        <!-- Flight Selection -->
+        <div class="mb-3">
+            <h5>Flight Details</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="source" class="form-label">Source</label>
+                    <select name="source" id="source" class="form-control" required>
+                        <option value="">Select Source</option>
+                        {% for source in flight_sources %}
+                            <option value="{{ source }}">{{ source }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="destination" class="form-label">Destination</label>
+                    <select name="destination" id="destination" class="form-control" required>
+                        <option value="">Select Destination</option>
+                        {% for dest in flight_destinations %}
+                            <option value="{{ dest }}">{{ dest }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div id="flight-details" class="mt-2"></div>
+        </div>
+
+        <!-- Hotel Selection -->
+        <div class="mb-3">
+            <h5>Hotel Details</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="hotel_destination" class="form-label">Hotel Destination</label>
+                    <select name="hotel_destination" id="hotel_destination" class="form-control" required>
+                        <option value="">Select Destination</option>
+                        {% for dest in hotel_destinations %}
+                            <option value="{{ dest }}">{{ dest }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="check_in_date" class="form-label">Check-In Date</label>
+                    <input type="date" name="check_in_date" id="check_in_date" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="check_out_date" class="form-label">Check-Out Date</label>
+                    <input type="date" name="check_out_date" id="check_out_date" class="form-control" required>
+                </div>
+            </div>
+            <div id="hotel-details" class="mt-2"></div>
+        </div>
+
+        <!-- Number of Guests -->
+        <div class="mb-3">
+            <label for="num_guests" class="form-label">Number of Guests</label>
+            <input type="number" name="num_guests" id="num_guests" class="form-control" value="1" min="1" required>
+        </div>
+
+        <!-- Airport Pickup Option -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="airport_pickup" name="airport_pickup">
+            <label class="form-check-label" for="airport_pickup">Add Airport Pickup (Additional 5000 BDT)</label>
+        </div>
+
+        <!-- Total Price -->
+        <div class="mb-3">
+            <h5>Total Price: <span id="total-price">0</span> BDT</h5>
+        </div>
+
+        <!-- Confirm Booking -->
+        <button type="submit" class="btn btn-warning">Confirm Booking</button>
+    </form>
+</div>
+
+<script>
+// Utility function to get the CSRF token from the cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+let flightPrice = 0;
+let hotelPricePerNight = 0;
+let stayDays = 0;
+
+function updateFlight() {
+    const source = document.getElementById('source').value;
+    const destination = document.getElementById('destination').value;
+    if (!source || !destination) {
+        document.getElementById('flight-details').innerHTML = '';
+        flightPrice = 0;
+        updatePrice();
+        return;
+    }
+
+    fetch('{% url "create_custom_package" %}', {
+        method: 'POST',
+        body: new URLSearchParams({
+            'get_flight': 'true',
+            'source': source,
+            'destination': destination
+        }),
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken  // Include CSRF token in headers
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const flightDetails = document.getElementById('flight-details');
+        if (data.error) {
+            flightDetails.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            flightPrice = 0;
+        } else {
+            flightDetails.innerHTML = `
+                <p><strong>Selected Flight:</strong> ${data.flight_name}</p>
+                <p><strong>Price:</strong> ${data.flight_price.toLocaleString()} BDT</p>
+            `;
+            flightPrice = parseInt(data.flight_price);
+        }
+        updatePrice();
+    })
+    .catch(error => {
+        document.getElementById('flight-details').innerHTML = '<div class="alert alert-danger">Error fetching flight.</div>';
+        flightPrice = 0;
+        updatePrice();
+    });
+}
+
+function updateHotel() {
+    const hotelDestination = document.getElementById('hotel_destination').value;
+    if (!hotelDestination) {
+        document.getElementById('hotel-details').innerHTML = '';
+        hotelPricePerNight = 0;
+        updatePrice();
+        return;
+    }
+
+    fetch('{% url "create_custom_package" %}', {
+        method: 'POST',
+        body: new URLSearchParams({
+            'get_hotel': 'true',
+            'hotel_destination': hotelDestination
+        }),
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken  // Include CSRF token in headers
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const hotelDetails = document.getElementById('hotel-details');
+        if (data.error) {
+            hotelDetails.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            hotelPricePerNight = 0;
+        } else {
+            hotelDetails.innerHTML = `
+                <p><strong>Selected Hotel:</strong> ${data.hotel_name}</p>
+                <p><strong>Price per Night:</strong> ${data.hotel_price.toLocaleString()} BDT</p>
+            `;
+            hotelPricePerNight = parseInt(data.hotel_price);
+        }
+        updatePrice();
+    })
+    .catch(error => {
+        document.getElementById('hotel-details').innerHTML = '<div class="alert alert-danger">Error fetching hotel.</div>';
+        hotelPricePerNight = 0;
+        updatePrice();
+    });
+}
+
+function updatePrice() {
+    const checkInDate = document.getElementById('check_in_date').value;
+    const checkOutDate = document.getElementById('check_out_date').value;
+    const numGuests = parseInt(document.getElementById('num_guests').value || 1);
+    const airportPickup = document.getElementById('airport_pickup').checked;
+
+    // Calculate stay duration
+    stayDays = 0;
+    if (checkInDate && checkOutDate) {
+        const checkIn = new Date(checkInDate);
+        const checkOut = new Date(checkOutDate);
+        stayDays = (checkOut - checkIn) / (1000 * 60 * 60 * 24);
+        if (stayDays <= 0) {
+            stayDays = 0;
+            document.getElementById('total-price').textContent = '0';
+            alert('Check-out date must be after check-in date.');
+            return;
+        }
+    }
+
+    // Calculate total price
+    const hotelTotalPrice = hotelPricePerNight * stayDays;
+    const guestCost = numGuests * 5000;  // 5000 BDT per guest
+    const airportPickupFee = airportPickup ? 5000 : 0;  // 5000 BDT for airport pickup
+    const totalPrice = (flightPrice + hotelTotalPrice + guestCost + airportPickupFee) * numGuests;
+
+    document.getElementById('total-price').textContent = totalPrice.toLocaleString();
+}
+
+// Add event listeners
+document.getElementById('source').addEventListener('change', updateFlight);
+document.getElementById('destination').addEventListener('change', updateFlight);
+document.getElementById('hotel_destination').addEventListener('change', updateHotel);
+document.getElementById('check_in_date').addEventListener('change', updatePrice);
+document.getElementById('check_out_date').addEventListener('change', updatePrice);
+document.getElementById('num_guests').addEventListener('change', updatePrice);
+document.getElementById('airport_pickup').addEventListener('change', updatePrice);
+</script>
+{% endblock %}

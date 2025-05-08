@@ -1,0 +1,42 @@
+{% extends "users/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Custom Payment Gateway</h2>
+    <p>Paying for: <strong>{{ payment.package.package_name }}</strong></p>
+    <p>Amount: <strong>BDT {{ payment.amount }}</strong></p>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="payment_method" class="form-label">Payment Method</label>
+            <select class="form-control" id="payment_method" name="payment_method">
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="card_number" class="form-label">Card Number</label>
+            <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" required>
+        </div>
+        <div class="mb-3">
+            <label for="cardholder_name" class="form-label">Cardholder Name</label>
+            <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" placeholder="John Doe" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="expiry_date" class="form-label">Expiry Date (MM/YY)</label>
+                <input type="text" class="form-control" id="expiry_date" name="expiry_date" placeholder="MM/YY" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="cvv" class="form-label">CVV</label>
+                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success">Pay Now</button>
+    </form>
+</div>
+{% endblock %}

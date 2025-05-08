@@ -1,0 +1,74 @@
+{% extends "users/base.html" %}
+{% load form_filters %}
+{% block title %}{{ user.username }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <h2>Your Profile</h2>
+        <p>Username: {{ user.username }}</p> <button><a class="nav-item nav-link" href="{% url 'expense_log' %}">Expense Log</a></button>
+        <h3>Update Profile</h3>
+        <form method="post">
+            {% csrf_token %}
+            <!-- {% if form.non_field_errors %} for rendering out non field errors if need be
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %} -->
+            <div class="mb-3">
+                <label for="{{ form.expense_threshold.id_for_label }}" class="form-label">Expense Threshold</label>
+                {{ form.expense_threshold|add_class:"form-control opacity-75" }}
+                <small class="form-text text-muted">{{ form.expense_threshold.help_text }}</small>
+                {% if form.expense_threshold.errors %}
+                    <div class="text-danger">{{ form.expense_threshold.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                {{ form.email|add_class:"form-control opacity-75" }}
+                <small class="form-text text-muted">{{ form.email.help_text }}</small>
+                {% if form.email.errors %}
+                    <div class="text-danger">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.phone.id_for_label }}" class="form-label">Phone</label>
+                {{ form.phone|add_class:"form-control opacity-75" }}
+                <small class="form-text text-muted">{{ form.phone.help_text }}</small>
+                {% if form.phone.errors %}
+                    <div class="text-danger">{{ form.phone.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.old_password.id_for_label }}" class="form-label">Old Password</label>
+                {{ form.old_password|add_class:"form-control" }}
+                <small class="form-text text-muted">{{ form.old_password.help_text }}</small>
+                {% if form.old_password.errors %}
+                    <div class="text-danger">{{ form.old_password.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.new_password.id_for_label }}" class="form-label">New Password</label>
+                {{ form.new_password|add_class:"form-control" }}
+                <small class="form-text text-muted">{{ form.new_password.help_text }}</small>
+                {% if form.new_password.errors %}
+                    <div class="text-danger">{{ form.new_password.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.new_password_again.id_for_label }}" class="form-label">Confirm New Password</label>
+                {{ form.new_password_again|add_class:"form-control" }}  <!-- Match new_password2 -->
+                <small class="form-text text-muted">{{ form.new_password_again.help_text }}</small>
+                {% if form.new_password_again.errors %}
+                    <div class="text-danger">{{ form.new_password_again.errors }}</div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
+    </div>
+</div>
+<style>
+    .form-control.opacity-75::placeholder {
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}

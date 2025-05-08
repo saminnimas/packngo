@@ -1,0 +1,36 @@
+{% extends "users/base.html" %}
+{% block content %}
+
+<dev class="col-md-8 mx-auto">
+    <h2>Manage Users</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Admin Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{% if user.is_staff %}Admin{% else %}Normal User{% endif %}</td>
+                    <td>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            {% if user.is_staff %}
+                                <button type="submit" name="action" value="revoke_admin" class="btn btn-danger btn-sm">Revoke Admin</button>
+                            {% else %}
+                                <button type="submit" name="action" value="grant_admin" class="btn btn-success btn-sm">Grant Admin</button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</dev>
+
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "users/base.html" %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Buy Custom Packages</h2>
+
+    {% if custom_packages %}
+        {% for package in custom_packages %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ package.package_name }}</h5>
+                    <p class="card-text">{{ package.description }}</p>
+                    <p class="card-text"><strong>Price:</strong> {{ package.price }} BDT</p>
+                    <p class="card-text"><strong>Dates:</strong> {{ package.start_date }} to {{ package.end_date }}</p>
+
+                    <!-- Display Custom Components -->
+                    {% if package.custom_components %}
+                        <p><strong>Stay Days:</strong> {{ package.custom_components.stay_days }}</p>
+                        <p><strong>Flight Cost:</strong> {{ package.custom_components.flight_cost }} BDT</p>
+                        <p><strong>Transport Cost:</strong> {{ package.custom_components.transport_cost }} BDT</p>
+                        <p><strong>Match Ticket Cost:</strong> {{ package.custom_components.match_ticket_cost }} BDT</p>
+                        <p><strong>Country:</strong> {{ package.custom_components.country }}</p>
+                        <p><strong>Number of Guests:</strong> {{ package.custom_components.num_guests }}</p>
+                    {% endif %}
+
+                    <!-- Flight Search (Subfeature 2.1) -->
+                    <div class="mb-3">
+                        <h6>Search Flights for This Package</h6>
+                        <form id="flight-search-form-{{ package.id }}" class="row">
+                            <div class="col-md-3">
+                                <label for="origin-{{ package.id }}" class="form-label">Origin (e.g., DAC)</label>
+                                <input type="text" name="origin" id="origin-{{ package.id }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="destination-{{ package.id }}" class="form-label">Destination (e.g., LHR)</label>
+                                <input type="text" name="destination" id="destination-{{ package.id }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="check_in_date-{{ package.id }}" class="form-label">Check-In Date</label>
+                                <input type="date" name="check_in_date" id="check_in_date-{{ package.id }}" value="{{ package.start_date|date:'Y-m-d' }}" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <!-- Use data-package-id to store the package ID -->
+                                <button type="button" class="btn btn-primary mt-4" data-package-id="{{ package.id }}" onclick="searchFlights(this)">Search Flights</button>
+                            </div>
+                        </form>
+                        <div id="flight-results-{{ package.id }}" class="mt-3"></div>
+                    </div>
+
+                    <!-- Hotel Search (Subfeature 2.2) -->
+                    <div class="mb-3">
+                        <h6>Search Hotels for This Package</h6>
+                        <form id="hotel-search-form-{{ package.id }}" class="row">
+                            <div class="col-md-3">
+                                <label for="hotel_destination-{{ package.id }}" class="form-label">Hotel Destination</label>
+                                <input type="text" name="hotel_destination" id="hotel_destination-{{ package.id }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="check_in_date_hotel-{{ package.id }}" class="form-label">Check-In Date</label>
+                                <input type="date" name="check_in_date" id="check_in_date_hotel-{{ package.id }}" value="{{ package.start_date|date:'Y-m-d' }}" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="check_out_date-{{ package.id }}" class="form-label">Check-Out Date</label>
+                                <input type="date" name="check_out_date" id="check_out_date-{{ package.id }}" value="{{ package.end_date|date:'Y-m-d' }}" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="num_guests-{{ package.id }}" class="form-label">No. of Guests</label>
+                                <input type="number" name="num_guests" id="num_guests-{{ package.id }}" value="{{ package.custom_components.num_guests }}" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-3 mt-4">
+                                <!-- Use data-package-id to store the package ID -->
+                                <button type="button" class="btn btn-primary" data-package-id="{{ package.id }}" onclick="searchHotels(this)">Search Hotels</button>
+                            </div>
+                        </form>
+                        <div id="hotel-results-{{ package.id }}" class="mt-3"></div>
+                    </div>
+
+                    <!-- Buy Button -->
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="buy_package" value="true">
+                        <input type="hidden" name="package_id" value="{{ package.id }}">
+                        <button type="submit" class="btn btn-warning">Confirm Booking</button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-center">No custom packages available at the moment.</p>
+    {% endif %}
+</div>
+
+<script>
+function searchFlights(button) {
+    // Retrieve packageId from the button's data attribute
+    const packageId = button.getAttribute('data-package-id');
+    const form = document.getElementById(`flight-search-form-${packageId}`);
+    const formData = new FormData(form);
+    formData.append('search_flights', 'true');
+
+    fetch('{% url "custom_package" %}', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById(`flight-results-${packageId}`);
+        if (data.error) {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+            let html = '<h6>Flight Results</h6>';
+            data.flights.forEach(flight => {
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <p><strong>Flight:</strong> ${flight.itineraries[0].segments[0].carrierCode} ${flight.itineraries[0].segments[0].number}</p>
+                            <p><strong>Price:</strong> ${flight.price.total} ${flight.price.currency}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        }
+    })
+    .catch(error => {
+        document.getElementById(`flight-results-${packageId}`).innerHTML = '<div class="alert alert-danger">Error fetching flights.</div>';
+    });
+}
+
+function searchHotels(button) {
+    // Retrieve packageId from the button's data attribute
+    const packageId = button.getAttribute('data-package-id');
+    const form = document.getElementById(`hotel-search-form-${packageId}`);
+    const formData = new FormData(form);
+    formData.append('search_hotels', 'true');
+
+    fetch('{% url "custom_package" %}', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById(`hotel-results-${packageId}`);
+        if (data.error) {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        } else {
+            let html = '<h6>Hotel Results</h6>';
+            data.hotels.forEach(hotel => {
+                html += `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6>${hotel.name}</h6>
+                            <p><strong>Price:</strong> ${hotel.minRate} ${hotel.currency}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        }
+    })
+    .catch(error => {
+        document.getElementById(`hotel-results-${packageId}`).innerHTML = '<div class="alert alert-danger">Error fetching hotels.</div>';
+    });
+}
+</script>
+{% endblock %}
+
+
+<!-- buy_package -->
+{% extends "users/base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <h2>Buy {{ package.name }}</h2>
+        <p>{{ package.event_description }}</p>
+        <p><strong>Price:</strong> ${{ package.price }}</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Confirm Purchase</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

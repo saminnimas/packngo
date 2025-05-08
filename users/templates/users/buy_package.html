@@ -1,0 +1,6 @@
+{% extends "users/base.html" %}
+{% block content %}
+{% for package in packages %}
+    <p>{{ package.package_name }} - ${{ package.price }} <a href="#" class="btn btn-sm btn-success">Buy</a></p>
+{% endfor %}
+{% endblock content %}

@@ -1,0 +1,8 @@
+{% extends "users/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Payment Cancelled</h2>
+    <p>You have cancelled the payment for "{{ package.package_name }}".</p>
+    <a href="{% url 'package_detail' package.id %}" class="btn btn-primary">Back to Package Details</a>
+</div>
+{% endblock %}

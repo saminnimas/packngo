@@ -1,0 +1,186 @@
+{% extends "users/base.html" %}
+{% block title %}Flight Booking{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Book a Flight</h2>
+
+    {% if sources and destinations %}
+        <form method="post" id="flight-booking-form">
+            {% csrf_token %}
+            <!-- Source Selection -->
+            <div class="mb-3">
+                <label for="source" class="form-label">Source</label>
+                <select name="source" id="source" class="form-control" required>
+                    <option value="">Select Source</option>
+                    {% for src in sources %}
+                        <option value="{{ src }}">{{ src }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Destination Selection -->
+            <div class="mb-3">
+                <label for="destination" class="form-label">Destination</label>
+                <select name="destination" id="destination" class="form-control" required>
+                    <option value="">Select Destination</option>
+                    {% for dest in destinations %}
+                        <option value="{{ dest }}">{{ dest }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Trip Type Selection -->
+            <div class="mb-3">
+                <label class="form-label">Trip Type</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="trip_type" id="one-way" value="one-way" checked>
+                        <label class="form-check-label" for="one-way">One-way</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="trip_type" id="round-trip" value="round-trip">
+                        <label class="form-check-label" for="round-trip">Round-Trip</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departure Date -->
+            <div class="mb-3">
+                <label for="departure_date" class="form-label">Departure Date</label>
+                <input type="date" name="departure_date" id="departure_date" class="form-control" required>
+            </div>
+
+            <!-- Return Date (Hidden for One-way) -->
+            <div class="mb-3" id="return-date-container" style="display: none;">
+                <label for="return_date" class="form-label">Return Date</label>
+                <input type="date" name="return_date" id="return_date" class="form-control">
+            </div>
+
+            <!-- Number of Passengers -->
+            <div class="mb-3">
+                <label for="num_passengers" class="form-label">Number of Passengers</label>
+                <input type="number" name="num_passengers" id="num_passengers" class="form-control" value="1" min="1" required>
+            </div>
+
+            <!-- Total Price (Dynamic) -->
+            <div class="mb-3">
+                <h5>Total Price: <span id="total-price">0</span> BDT</h5>
+                <p id="price-error" class="text-danger" style="display: none;"></p>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary" id="submit-btn" disabled>Book Flight</button>
+        </form>
+
+        <script>
+        let flightPrice = 0;  // Store the actual flight price fetched via AJAX
+
+        // Toggle return date field based on trip type
+        const tripTypeRadios = document.getElementsByName('trip_type');
+        const returnDateContainer = document.getElementById('return-date-container');
+        const returnDateInput = document.getElementById('return_date');
+        const submitBtn = document.getElementById('submit-btn');
+        const priceError = document.getElementById('price-error');
+
+        tripTypeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'round-trip') {
+                    returnDateContainer.style.display = 'block';
+                    returnDateInput.setAttribute('required', 'required');
+                } else {
+                    returnDateContainer.style.display = 'none';
+                    returnDateInput.removeAttribute('required');
+                    returnDateInput.value = '';
+                }
+                updatePrice();
+            });
+        });
+
+        // Validate source != destination and fetch price via AJAX
+        async function fetchFlightPrice() {
+            const source = document.getElementById('source').value;
+            const destination = document.getElementById('destination').value;
+
+            // Reset price and error
+            flightPrice = 0;
+            priceError.style.display = 'none';
+            submitBtn.disabled = true;
+
+            if (!source || !destination) {
+                updatePrice();
+                return;
+            }
+
+            if (source === destination) {
+                priceError.textContent = 'Source and destination cannot be the same.';
+                priceError.style.display = 'block';
+                updatePrice();
+                return;
+            }
+
+            // Fetch the flight price via AJAX
+            try {
+                const response = await fetch(`/browse/flights/get-price/?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}`);
+                const data = await response.json();
+
+                if (data.available) {
+                    flightPrice = data.price;
+                    submitBtn.disabled = false;
+                } else {
+                    flightPrice = 0;
+                    priceError.textContent = data.error || 'No flights available.';
+                    priceError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error fetching flight price:', error);
+                priceError.textContent = 'Error fetching flight price. Please try again.';
+                priceError.style.display = 'block';
+            }
+
+            updatePrice();
+        }
+
+        function updatePrice() {
+            const tripType = document.querySelector('input[name="trip_type"]:checked').value;
+            const departureDate = document.getElementById('departure_date').value;
+            const returnDate = document.getElementById('return_date').value;
+            const numPassengers = parseInt(document.getElementById('num_passengers').value || 1);
+
+            // Calculate duration and total price
+            let duration = 1;
+            if (departureDate && returnDate) {
+                const dep = new Date(departureDate);
+                const ret = new Date(returnDate);
+                duration = (ret - dep) / (1000 * 60 * 60 * 24);
+                if (duration <= 0) {
+                    duration = 1;
+                    alert('Return date must be after departure date.');
+                }
+            }
+
+            const isRoundTrip = tripType === 'round-trip';
+            const totalPrice = flightPrice * numPassengers * (isRoundTrip ? 2 : 1);
+
+            document.getElementById('total-price').textContent = totalPrice.toLocaleString();
+        }
+
+        // Add event listeners
+        document.getElementById('source').addEventListener('change', fetchFlightPrice);
+        document.getElementById('destination').addEventListener('change', fetchFlightPrice);
+        document.getElementById('departure_date').addEventListener('change', updatePrice);
+        document.getElementById('return_date').addEventListener('change', updatePrice);
+        document.getElementById('num_passengers').addEventListener('change', updatePrice);
+        document.querySelectorAll('input[name="trip_type"]').forEach(radio => {
+            radio.addEventListener('change', updatePrice);
+        });
+
+        // Initialize price on page load
+        fetchFlightPrice();
+        </script>
+    {% else %}
+        <p class="text-center">No flights are currently available for booking.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+

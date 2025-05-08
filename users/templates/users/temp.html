@@ -1,0 +1,33 @@
+{% extends 'users/base.html' %}
+{% load crispy_forms_tags %}
+<!-- {% load socialaccount %} -->
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-6">
+        <div class="content-section">
+            <form method="POST">
+                {% csrf_token %} <!-- Without this the from won't work -->
+                <fieldset class="form-group">
+                    <legend class="border-bottom mb-4">Sign Up NOW!!</legend>
+                    {{ form|crispy }}
+                </fieldset>
+                <div class="from-group">
+                    <button class="btn btn-outline-dark">Sign Up</button>
+                </div>
+                <!-- <div class="from-group">
+                    <h2>Google Login</h2>
+                    <a href="{% provider_login_url 'google' %}?next=/">Login With Google</a>
+                </div> -->
+            </form>
+            <div class="border-top pt-3">
+                <small class="text-muted">
+                    Already Have An Account? <a class="ml-2" href="{% url 'login' %}">Sign In</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- REMEMBER TO WRAP THE REGISTER SEGMENT IN A BOX -->
+<!-- ADD GOOGLE SSO PART -->

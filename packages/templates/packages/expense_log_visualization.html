@@ -1,0 +1,78 @@
+{% extends 'users/base.html' %}
+{% block title %}Expense Log Visualization - PackNgo{% endblock %}
+{% block content %}
+<div class="col-md-8 mx-auto">
+  <h2>Expense Log Visualization</h2>
+  <canvas id="expenseChart" width="400" height="200"></canvas>
+  <a href="{% url 'expense_log' %}" class="btn btn-primary mt-3">Back to Expense Log</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const ctx = document.getElementById('expenseChart').getContext('2d');
+  const chartData = {{ chart_data|safe }};
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartData.labels,
+      datasets: [
+        {
+          label: 'Expense (BDT)',
+          data: chartData.amounts,
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Duration (Days)',
+          data: chartData.durations,
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Expense (BDT)'
+          }
+        },
+        y1: {
+          beginAtZero: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Duration (Days)'
+          },
+          grid: {
+            drawOnChartArea: false,
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Package Name'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Expense and Duration Comparison'
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}

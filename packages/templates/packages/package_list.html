@@ -1,0 +1,177 @@
+{% extends "users/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-10">
+            <h2>
+                {% if destination %}
+                    DESTINATION: {{ destination|upper }} ({{ page_obj.paginator.count }} PLACES FOUND)
+                {% else %}
+                    ALL PACKAGES ({{ page_obj.paginator.count }} PLACES FOUND)
+                {% endif %}
+            </h2>
+        </div>
+        <div class="col-md-2 text-end">
+            <form method="get" action="{% url 'package_list' %}">
+                <div class="input-group">
+                    <input type="text" name="destination" class="form-control" placeholder="Search by destination" value="{{ destination }}">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Filters (Left Sidebar) -->
+        <div class="col-md-3">
+            <h5>FILTER BY</h5>
+            <form method="get" action="{% url 'package_list' %}">
+                <input type="hidden" name="destination" value="{{ destination }}">
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>PRICE RANGE</h6>
+                        <div class="d-flex justify-content-between">
+                            <span>BDT {{ price_min }}</span>
+                            <span>BDT {{ price_max }}</span>
+                        </div>
+                        <input type="range" name="price_min" min="0" max="100000" value="{{ price_min }}" class="form-range" oninput="this.form.price_min_value.value=this.value">
+                        <input type="range" name="price_max" min="0" max="100000" value="{{ price_max }}" class="form-range" oninput="this.form.price_max_value.value=this.value">
+                        <div class="d-flex justify-content-between">
+                            <input type="number" name="price_min_value" value="{{ price_min }}" class="form-control w-45" readonly>
+                            <input type="number" name="price_max_value" value="{{ price_max }}" class="form-control w-45" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>AVAILABILITY</h6>
+                        <div class="mb-2">
+                            <label for="check_in" class="form-label">From</label>
+                            <input type="date" name="check_in" id="check_in" class="form-control" value="{{ check_in }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="check_out" class="form-label">To</label>
+                            <input type="date" name="check_out" id="check_out" class="form-control" value="{{ check_out }}">
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">Check Availability</button>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>DURATION</h6>
+                        <div class="form-check">
+                            <input type="radio" name="duration" value="0-3" id="duration_0_3" class="form-check-input" {% if duration == '0-3' %}checked{% endif %}>
+                            <label for="duration_0_3" class="form-check-label">0-3 Days</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" name="duration" value="3-5" id="duration_3_5" class="form-check-input" {% if duration == '3-5' %}checked{% endif %}>
+                            <label for="duration_3_5" class="form-check-label">3-5 Days</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" name="duration" value="5-7" id="duration_5_7" class="form-check-input" {% if duration == '5-7' %}checked{% endif %}>
+                            <label for="duration_5_7" class="form-check-label">5-7 Days</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" name="duration" value="7+" id="duration_7_plus" class="form-check-input" {% if duration == '7+' %}checked{% endif %}>
+                            <label for="duration_7_plus" class="form-check-label">7+ Days</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>DESTINATION</h6>
+                        {% for dest in destinations %}
+                            <div class="form-check">
+                                <input type="checkbox" name="destination" value="{{ dest }}" id="dest_{{ dest|slugify }}" class="form-check-input" {% if destination == dest %}checked{% endif %}>
+                                <label for="dest_{{ dest|slugify }}" class="form-check-label">{{ dest }}</label>
+                            </div>
+                        {% endfor %}
+                        <a href="#" class="d-block mt-2">Show More Destinations</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+            </form>
+        </div>
+
+        <div class="col-md-9">
+            {% if page_obj %}
+                {% for package in page_obj %}
+                    <div class="card mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                <img src="{% if package.image %}{{ package.image.url }}{% else %}https://via.placeholder.com/150{% endif %}" class="img-fluid rounded-start" alt="{{ package.package_name }}">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <a href="{% url 'package_detail' package.id %}"><h5 class="card-title">{{ package.package_name }}</h5></a>
+                                    <p class="card-text">{{ package.description }}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge bg-warning text-dark">WATER ACTIVITIES</span>
+                                            <span class="badge bg-secondary">Transport</span>
+                                            <span class="badge bg-info">Family Plan</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-warning">★★★★★</span>
+                                            <span>(584 reviews)</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span><strong>BDT {{ package.price }}</strong> per person</span>
+                                        <a href="{% url 'buy_package' package.id %}" class="btn btn-warning">Book Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if destination %}&destination={{ destination }}{% endif %}{% if price_min %}&price_min={{ price_min }}{% endif %}{% if price_max %}&price_max={{ price_max }}{% endif %}{% if check_in %}&check_in={{ check_in }}{% endif %}{% if check_out %}&check_out={{ check_out }}{% endif %}{% if duration %}&duration={{ duration }}{% endif %}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}{% if destination %}&destination={{ destination }}{% endif %}{% if price_min %}&price_min={{ price_min }}{% endif %}{% if price_max %}&price_max={{ price_max }}{% endif %}{% if check_in %}&check_in={{ check_in }}{% endif %}{% if check_out %}&check_out={{ check_out }}{% endif %}{% if duration %}&duration={{ duration }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if destination %}&destination={{ destination }}{% endif %}{% if price_min %}&price_min={{ price_min }}{% endif %}{% if price_max %}&price_max={{ price_max }}{% endif %}{% if check_in %}&check_in={{ check_in }}{% endif %}{% if check_out %}&check_out={{ check_out }}{% endif %}{% if duration %}&duration={{ duration }}{% endif %}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% else %}
+                <p class="text-center">No packages found for this destination.</p>
+            {% endif %}
+
+            <!-- Create Custom Package Link -->
+            <div class="text-center mt-4">
+                <a href="{% url 'create_custom_package' %}" class="btn btn-warning">Need a Custom Package? Create Now</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.w-45 {
+    width: 45%;
+}
+</style>
+{% endblock %}
