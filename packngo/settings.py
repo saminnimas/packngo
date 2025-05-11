@@ -125,16 +125,6 @@ WSGI_APPLICATION = 'packngo.wsgi.application'
 
 STRIPE_SECRET_KEY = 'Tony_monTana'
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'packngo_db',
-#         'USER': 'packngo_user',
-#         'PASSWORD': 'pass',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
 
 DATABASES = {
     'default': {
@@ -184,7 +174,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_DIR = [os.path.join(BASE_DIR, 'users/static')]
+# STATIC_DIR = [os.path.join(BASE_DIR, 'users/static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
